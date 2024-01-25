@@ -1,0 +1,111 @@
+
+;; Function add_two_numbers (null)
+;; enabled by -tree-original
+
+@1      bind_expr        type: @2       vars: @3       body: @4      
+@2      void_type        name: @5       algn: 8       
+@3      var_decl         name: @6       type: @7       scpe: @8      
+                         srcp: test2.c:3               init: @9      
+                         size: @10      algn: 32       used: 1       
+@4      statement_list   0   : @11      1   : @12      2   : @13     
+@5      type_decl        name: @14      type: @2      
+@6      identifier_node  strg: sum1     lngt: 4       
+@7      integer_type     name: @15      size: @10      algn: 32      
+                         prec: 32       sign: signed   min : @16     
+                         max : @17     
+@8      function_decl    name: @18      type: @19      srcp: test2.c:1      
+                         args: @20      link: extern  
+@9      integer_cst      type: @7      int: 0
+@10     integer_cst      type: @21     int: 32
+@11     decl_expr        type: @2      
+@12     decl_expr        type: @2      
+@13     bind_expr        type: @2       vars: @22      body: @23     
+@14     identifier_node  strg: void     lngt: 4       
+@15     type_decl        name: @24      type: @7      
+@16     integer_cst      type: @7      int: -2147483648
+@17     integer_cst      type: @7      int: 2147483647
+@18     identifier_node  strg: add_two_numbers         lngt: 15      
+@19     function_type    size: @10      algn: 32       retn: @2      
+                         prms: @25     
+@20     parm_decl        name: @26      type: @27      scpe: @8      
+                         srcp: test2.c:1               argt: @27     
+                         size: @28      algn: 64       used: 0       
+@21     integer_type     name: @29      size: @30      algn: 128     
+                         prec: 128      sign: unsigned min : @31     
+                         max : @32     
+@22     var_decl         name: @33      type: @7       scpe: @8      
+                         srcp: test2.c:4               init: @9      
+                         size: @10      algn: 32       used: 1       
+@23     statement_list   0   : @34      1   : @35     
+@24     identifier_node  strg: int      lngt: 3       
+@25     tree_list        valu: @27      chan: @36     
+@26     identifier_node  strg: o        lngt: 1       
+@27     pointer_type     size: @28      algn: 64       ptd : @37     
+@28     integer_cst      type: @21     int: 64
+@29     identifier_node  strg: bitsizetype             lngt: 11      
+@30     integer_cst      type: @21     int: 128
+@31     integer_cst      type: @21     int: 0
+@32     integer_cst      type: @21     int: -1
+@33     identifier_node  strg: i        lngt: 1       
+@34     decl_expr        type: @2      
+@35     statement_list   0   : @38      1   : @39      2   : @40     
+                         3   : @41      4   : @42      5   : @43     
+                         6   : @44     
+@36     tree_list        valu: @45      chan: @46     
+@37     integer_type     name: @47      size: @28      algn: 64      
+                         prec: 64       sign: unsigned min : @48     
+                         max : @49     
+@38     goto_expr        type: @2       labl: @50     
+@39     label_expr       type: @2       name: @51     
+@40     modify_expr      type: @7       op 0: @3       op 1: @52     
+@41     postincrement_expr type: @7       op 0: @22      op 1: @53     
+@42     label_expr       type: @2       name: @50     
+@43     cond_expr        type: @2       op 0: @54      op 1: @55     
+                         op 2: @56     
+@44     label_expr       type: @2       name: @57     
+@45     pointer_type     size: @28      algn: 64       ptd : @58     
+@46     tree_list        valu: @45      chan: @59     
+@47     type_decl        name: @60      type: @37     
+@48     integer_cst      type: @37     int: 0
+@49     integer_cst      type: @37     int: -1
+@50     label_decl       type: @2       scpe: @8       srcp: test2.c:4      
+                         note: artificial 
+@51     label_decl       type: @2       scpe: @8       srcp: test2.c:4      
+                         note: artificial 
+@52     nop_expr         type: @7       op 0: @61     
+@53     integer_cst      type: @7      int: 1
+@54     le_expr          type: @7       op 0: @22      op 1: @62     
+@55     goto_expr        type: @2       labl: @51     
+@56     goto_expr        type: @2       labl: @57     
+@57     label_decl       type: @2       scpe: @8       srcp: test2.c:4      
+                         note: artificial 
+@58     integer_type     qual: c        name: @47      unql: @37     
+                         size: @28      algn: 64       prec: 64      
+                         sign: unsigned min : @48      max : @49     
+@59     tree_list        valu: @2      
+@60     identifier_node  strg: long unsigned int       lngt: 17      
+@61     plus_expr        type: @63      op 0: @64      op 1: @65     
+@62     integer_cst      type: @7      int: 9
+@63     integer_type     size: @10      algn: 32       prec: 32      
+                         sign: unsigned min : @66      max : @67     
+@64     convert_expr     type: @63      op 0: @68     
+@65     nop_expr         type: @63      op 0: @3      
+@66     integer_cst      type: @63     int: 0
+@67     integer_cst      type: @63     int: -1
+@68     indirect_ref     type: @58      op 0: @69     
+@69     pointer_plus_expr type: @45      op 0: @70      op 1: @71     
+@70     parm_decl        name: @72      type: @45      scpe: @8      
+                         srcp: test2.c:1               argt: @45     
+                         size: @28      algn: 64       used: 1       
+@71     nop_expr         type: @73      op 0: @74     
+@72     identifier_node  strg: i0       lngt: 2       
+@73     integer_type     name: @75      size: @28      algn: 64      
+                         prec: 64       sign: unsigned min : @76     
+                         max : @77     
+@74     mult_expr        type: @37      op 0: @78      op 1: @79     
+@75     identifier_node  strg: sizetype lngt: 8       
+@76     integer_cst      type: @73     int: 0
+@77     integer_cst      type: @73     int: -1
+@78     nop_expr         type: @37      op 0: @22     
+@79     integer_cst      type: @37     int: 8
+

@@ -15,18 +15,5 @@ mach-nix.nixpkgs.mkShell {
 
     clang
     gcc
-    calc   # needed for `msc` and `ms`
-    jq     # needed for `msc` and `ms`
-
-    # needed to compile `MeasureSuite` with `AssemblyLine`
-    pkg-config 
-    automake
-    autoconf
-    libtool
-    nasm      # needed for testing
   ];
-
-  shellHook = ''
-    # ./build.sh
-  '';
 }

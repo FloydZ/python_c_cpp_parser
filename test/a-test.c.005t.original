@@ -1,0 +1,45 @@
+
+;; Function main (null)
+;; enabled by -tree-original
+
+@1      statement_list   0   : @2       1   : @3      
+@2      bind_expr        type: @4       vars: @5       body: @6      
+@3      return_expr      type: @4       expr: @7      
+@4      void_type        name: @8       algn: 8       
+@5      var_decl         name: @9       type: @10      scpe: @11     
+                         srcp: test.c:2                init: @12     
+                         size: @13      algn: 32       used: 1       
+@6      statement_list   0   : @14      1   : @15     
+@7      modify_expr      type: @10      op 0: @16      op 1: @12     
+@8      type_decl        name: @17      type: @4      
+@9      identifier_node  strg: sum1     lngt: 4       
+@10     integer_type     name: @18      size: @13      algn: 32      
+                         prec: 32       sign: signed   min : @19     
+                         max : @20     
+@11     function_decl    name: @21      type: @22      srcp: test.c:1      
+                         link: extern  
+@12     integer_cst      type: @10     int: 0
+@13     integer_cst      type: @23     int: 32
+@14     decl_expr        type: @4      
+@15     return_expr      type: @4       expr: @24     
+@16     result_decl      type: @10      scpe: @11      srcp: test.c:1      
+                         note: artificial              size: @13     
+                         algn: 32      
+@17     identifier_node  strg: void     lngt: 4       
+@18     type_decl        name: @25      type: @10     
+@19     integer_cst      type: @10     int: -2147483648
+@20     integer_cst      type: @10     int: 2147483647
+@21     identifier_node  strg: main     lngt: 4       
+@22     function_type    unql: @26      size: @13      algn: 32      
+                         retn: @10     
+@23     integer_type     name: @27      size: @28      algn: 128     
+                         prec: 128      sign: unsigned min : @29     
+                         max : @30     
+@24     modify_expr      type: @10      op 0: @16      op 1: @5      
+@25     identifier_node  strg: int      lngt: 3       
+@26     function_type    size: @13      algn: 32       retn: @10     
+@27     identifier_node  strg: bitsizetype             lngt: 11      
+@28     integer_cst      type: @23     int: 128
+@29     integer_cst      type: @23     int: 0
+@30     integer_cst      type: @23     int: -1
+
