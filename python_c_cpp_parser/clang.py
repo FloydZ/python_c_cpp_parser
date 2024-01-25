@@ -27,14 +27,18 @@ class Node:
     """
     def __init__(self, id: str, kind: str, *args, **kwargs):
         """
-        id and kind are mandatory
+        id and kind are mandatory, hence we are enforcing them
+        as function arguments
         """
         self.id = id
         self.kind = kind
-        assert kind
+        self.__dict__.update((k, v) for k, v in kwargs.items() if k not in ["inner"])
+        self.__parse_inner(**kwargs)
 
-        self.loc = None
-        self.type = kwargs["type"] if "type" in kwargs else None
+    def __parse_inner(self, **kwargs):
+        """
+        recursively parses the next nodes
+        """
         inner = kwargs["inner"] if "inner" in kwargs else []
         self.inner = []
         if type(inner) is list and len(inner) > 0:
@@ -42,8 +46,8 @@ class Node:
                 if len(inn.keys()) == 0:
                     continue
 
-                n = Node(**inn)
-                n.__class__ = str_to_class(n.kind)
+                C = str_to_class(inn["kind"])
+                n = C(**inn)
                 self.inner.append(n)
         else:
             self.inner = None
@@ -56,6 +60,7 @@ class Node:
             for a in self.inner:
                 ret += t + a.__str__(depth)
         return ret
+
 
 
 class TranslationUnitDecl(Node):
@@ -83,7 +88,13 @@ class ConstantArrayType(Node):
     pass
 
 class FunctionDecl(Node):
-    pass
+    def __init__(self, id: str, kind: str, *args, **kwargs):
+        super().__init__(id, kind, *args, **kwargs)
+        self.__arguments = []
+        for i in self.inner:
+            if type(i) is ParmVarDecl:
+                self.__arguments.append(i)
+
 
 class CompoundStmt(Node):
     pass
@@ -105,6 +116,22 @@ class ImplicitCastExpr(Node):
 
 class DeclRefExpr(Node):
     pass
+
+class BinaryOperator(Node):
+    pass
+
+class UnaryOperator(Node):
+    pass
+
+class ArraySubscriptExpr(Node):
+    pass
+
+class CompoundAssignOperator(Node):
+    pass
+
+class ForStmt(Node):
+    pass
+
 
 
 
