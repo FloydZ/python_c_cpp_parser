@@ -25,32 +25,23 @@ class Range:
 class Node:
     """
     """
-    def __init__(self, 
-                 id="", 
-                 kind="", 
-                 loc=None, 
-                 range={},
-                 isImplicit=None, 
-                 name="",
-                 valueCategory="",
-                 referenceDecl={},
-                 inner=[],
-                 *args,
-                 **kwargs):
+    def __init__(self, id: str, kind: str, *args, **kwargs):
+        """
+        id and kind are mandatory
+        """
         self.id = id
         self.kind = kind
         assert kind
 
         self.loc = None
-        self.range = range
-        self.isImplicit = isImplicit
-        self.name = name
-        self.valueCategory = valueCategory
         self.type = kwargs["type"] if "type" in kwargs else None
+        inner = kwargs["inner"] if "inner" in kwargs else []
         self.inner = []
-
         if type(inner) is list and len(inner) > 0:
             for inn in inner:
+                if len(inn.keys()) == 0:
+                    continue
+
                 n = Node(**inn)
                 n.__class__ = str_to_class(n.kind)
                 self.inner.append(n)
@@ -58,7 +49,7 @@ class Node:
             self.inner = None
 
     def __str__(self, depth=0):
-        ret = str(self.id) + " " + str(self.__class__) +"\n"
+        ret = str(self.id) + " " + str(self.__class__) + "\n"
         if self.inner:
             depth += 1
             t = "\t"*depth
@@ -74,6 +65,9 @@ class BuiltinType(Node):
     pass
 
 class IntegerLiteral(Node):
+    pass
+
+class ParmVarDecl(Node):
     pass
 
 class TypedefDecl(Node):
@@ -112,360 +106,6 @@ class ImplicitCastExpr(Node):
 class DeclRefExpr(Node):
     pass
 
-
-
-
-test_str = """
-{
-  "id": "0x1450cc8",
-  "kind": "TranslationUnitDecl",
-  "loc": {},
-  "range": {
-    "begin": {},
-    "end": {}
-  },
-  "inner": [
-    {
-      "id": "0x14514f0",
-      "kind": "TypedefDecl",
-      "loc": {},
-      "range": {
-        "begin": {},
-        "end": {}
-      },
-      "isImplicit": true,
-      "name": "__int128_t",
-      "type": {
-        "qualType": "__int128"
-      },
-      "inner": [
-        {
-          "id": "0x1451290",
-          "kind": "BuiltinType",
-          "type": {
-            "qualType": "__int128"
-          }
-        }
-      ]
-    },
-    {
-      "id": "0x1451560",
-      "kind": "TypedefDecl",
-      "loc": {},
-      "range": {
-        "begin": {},
-        "end": {}
-      },
-      "isImplicit": true,
-      "name": "__uint128_t",
-      "type": {
-        "qualType": "unsigned __int128"
-      },
-      "inner": [
-        {
-          "id": "0x14512b0",
-          "kind": "BuiltinType",
-          "type": {
-            "qualType": "unsigned __int128"
-          }
-        }
-      ]
-    },
-    {
-      "id": "0x1451868",
-      "kind": "TypedefDecl",
-      "loc": {},
-      "range": {
-        "begin": {},
-        "end": {}
-      },
-      "isImplicit": true,
-      "name": "__NSConstantString",
-      "type": {
-        "qualType": "struct __NSConstantString_tag"
-      },
-      "inner": [
-        {
-          "id": "0x1451640",
-          "kind": "RecordType",
-          "type": {
-            "qualType": "struct __NSConstantString_tag"
-          },
-          "decl": {
-            "id": "0x14515b8",
-            "kind": "RecordDecl",
-            "name": "__NSConstantString_tag"
-          }
-        }
-      ]
-    },
-    {
-      "id": "0x1451900",
-      "kind": "TypedefDecl",
-      "loc": {},
-      "range": {
-        "begin": {},
-        "end": {}
-      },
-      "isImplicit": true,
-      "name": "__builtin_ms_va_list",
-      "type": {
-        "qualType": "char *"
-      },
-      "inner": [
-        {
-          "id": "0x14518c0",
-          "kind": "PointerType",
-          "type": {
-            "qualType": "char *"
-          },
-          "inner": [
-            {
-              "id": "0x1450d70",
-              "kind": "BuiltinType",
-              "type": {
-                "qualType": "char"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "0x1451bf8",
-      "kind": "TypedefDecl",
-      "loc": {},
-      "range": {
-        "begin": {},
-        "end": {}
-      },
-      "isImplicit": true,
-      "name": "__builtin_va_list",
-      "type": {
-        "qualType": "struct __va_list_tag[1]"
-      },
-      "inner": [
-        {
-          "id": "0x1451ba0",
-          "kind": "ConstantArrayType",
-          "type": {
-            "qualType": "struct __va_list_tag[1]"
-          },
-          "size": 1,
-          "inner": [
-            {
-              "id": "0x14519e0",
-              "kind": "RecordType",
-              "type": {
-                "qualType": "struct __va_list_tag"
-              },
-              "decl": {
-                "id": "0x1451958",
-                "kind": "RecordDecl",
-                "name": "__va_list_tag"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "0x14acde0",
-      "kind": "FunctionDecl",
-      "loc": {
-        "offset": 4,
-        "file": "../test/test.c",
-        "line": 1,
-        "col": 5,
-        "tokLen": 4
-      },
-      "range": {
-        "begin": {
-          "offset": 0,
-          "col": 1,
-          "tokLen": 3
-        },
-        "end": {
-          "offset": 42,
-          "line": 4,
-          "col": 1,
-          "tokLen": 1
-        }
-      },
-      "name": "main",
-      "mangledName": "main",
-      "type": {
-        "qualType": "int ()"
-      },
-      "inner": [
-        {
-          "id": "0x14acfd0",
-          "kind": "CompoundStmt",
-          "range": {
-            "begin": {
-              "offset": 11,
-              "line": 1,
-              "col": 12,
-              "tokLen": 1
-            },
-            "end": {
-              "offset": 42,
-              "line": 4,
-              "col": 1,
-              "tokLen": 1
-            }
-          },
-          "inner": [
-            {
-              "id": "0x14acf70",
-              "kind": "DeclStmt",
-              "range": {
-                "begin": {
-                  "offset": 14,
-                  "line": 2,
-                  "col": 2,
-                  "tokLen": 3
-                },
-                "end": {
-                  "offset": 26,
-                  "col": 14,
-                  "tokLen": 1
-                }
-              },
-              "inner": [
-                {
-                  "id": "0x14acee8",
-                  "kind": "VarDecl",
-                  "loc": {
-                    "offset": 18,
-                    "col": 6,
-                    "tokLen": 4
-                  },
-                  "range": {
-                    "begin": {
-                      "offset": 14,
-                      "col": 2,
-                      "tokLen": 3
-                    },
-                    "end": {
-                      "offset": 25,
-                      "col": 13,
-                      "tokLen": 1
-                    }
-                  },
-                  "isUsed": true,
-                  "name": "sum1",
-                  "type": {
-                    "qualType": "int"
-                  },
-                  "init": "c",
-                  "inner": [
-                    {
-                      "id": "0x14acf50",
-                      "kind": "IntegerLiteral",
-                      "range": {
-                        "begin": {
-                          "offset": 25,
-                          "col": 13,
-                          "tokLen": 1
-                        },
-                        "end": {
-                          "offset": 25,
-                          "col": 13,
-                          "tokLen": 1
-                        }
-                      },
-                      "type": {
-                        "qualType": "int"
-                      },
-                      "valueCategory": "prvalue",
-                      "value": "0"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "0x14acfc0",
-              "kind": "ReturnStmt",
-              "range": {
-                "begin": {
-                  "offset": 29,
-                  "line": 3,
-                  "col": 2,
-                  "tokLen": 6
-                },
-                "end": {
-                  "offset": 36,
-                  "col": 9,
-                  "tokLen": 4
-                }
-              },
-              "inner": [
-                {
-                  "id": "0x14acfa8",
-                  "kind": "ImplicitCastExpr",
-                  "range": {
-                    "begin": {
-                      "offset": 36,
-                      "col": 9,
-                      "tokLen": 4
-                    },
-                    "end": {
-                      "offset": 36,
-                      "col": 9,
-                      "tokLen": 4
-                    }
-                  },
-                  "type": {
-                    "qualType": "int"
-                  },
-                  "valueCategory": "prvalue",
-                  "castKind": "LValueToRValue",
-                  "inner": [
-                    {
-                      "id": "0x14acf88",
-                      "kind": "DeclRefExpr",
-                      "range": {
-                        "begin": {
-                          "offset": 36,
-                          "col": 9,
-                          "tokLen": 4
-                        },
-                        "end": {
-                          "offset": 36,
-                          "col": 9,
-                          "tokLen": 4
-                        }
-                      },
-                      "type": {
-                        "qualType": "int"
-                      },
-                      "valueCategory": "lvalue",
-                      "referencedDecl": {
-                        "id": "0x14acee8",
-                        "kind": "VarDecl",
-                        "name": "sum1",
-                        "type": {
-                          "qualType": "int"
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}"""
-
-data = json.loads(test_str)
-data = Node(**data)
-print(data)
-exit(1)
 
 
 class clang_parser:
@@ -510,5 +150,6 @@ class clang_parser:
         data = Node(**data)
         return data
 
-c = clang_parser("../test/test.c")
+
+c = clang_parser("../test/test2.c")
 print(c.execute())
