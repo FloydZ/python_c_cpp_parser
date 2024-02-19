@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from subprocess import Popen, PIPE, STDOUT
 from typing import Union
 from pathlib import Path
@@ -10,6 +9,8 @@ import os
 import json
 import re
 import tempfile
+
+from python_c_cpp_parser.clang import *
 
 
 def is_empty_str(s: str):
@@ -62,21 +63,25 @@ class ParsingNode:
 
         return ParsingNode(**d)
 
+    def __str__(self):
+        return str(self.__dict__)
+
 
 class gcc_parser:
     """
     wrapper around the command: `gcc -fdump-tree-original-raw=outfile.data input.c`
     """
 
-    BINARY = "gcc"
-    COMMAND = ["-fdump-tree-original-raw="]
+    BINARY = ["gcc"]
+    COMMANDS = ["-c", "-o", "/tmp/kek.o"]
+    COMMAND = "-fdump-tree-original-raw="
 
     def __init__(self, file: Union[str, Path]):
         self.__file = file if type(file) is str else file.absolute()
         self.__outfile = tempfile.NamedTemporaryFile(suffix=".data")
 
     def execute(self):
-        cmd = [gcc_parser.BINARY] + [gcc_parser.COMMAND[0]+str(self.__outfile.name)]
+        cmd = gcc_parser.BINARY + gcc_parser.COMMANDS + [gcc_parser.COMMAND+str(self.__outfile.name)]
         cmd += [self.__file]
         print(cmd)
 
@@ -107,6 +112,8 @@ class gcc_parser:
                                  srcp: test2.c:3               init: @9      
                                  size: @10      algn: 32       used: 1   
         ...
+
+        :return a dictonary which keys are the node ids and values the nodes are.
         """
         # first find the entry
         i = 0
@@ -117,12 +124,13 @@ class gcc_parser:
         lines = lines[i:]
         i = 0
         cNode = None
-        nodes = []
+        nodes = {}
         while i < len(lines):
             # if the line starts with `@` create a new node and pus the old one
             if lines[i].startswith("@"):
                 if cNode is not None:
-                    nodes.append(cNode)
+                    assert cNode.id
+                    nodes[cNode.id] = (cNode)
                 
                 cNode = ParsingNode.from_line(lines[i])
                 i = i + 1
@@ -141,5 +149,8 @@ class gcc_parser:
 
         return nodes
 
+
 c = gcc_parser("../test/c/test2.c")
-print(c.execute())
+nodes = c.execute()
+for n in nodes.values():
+    print(n)

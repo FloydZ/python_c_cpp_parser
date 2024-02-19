@@ -17,6 +17,14 @@ for_loop_decls = []
 while_loop_decls = []
 do_loop_decls = []
 
+# NOTE: some design decisions
+#   for each `function|compound_stmt` the following node are traced for fast access
+#       for_loop
+#       while_loop
+#       do_loop
+#       if_loop
+#
+#   for each VarDecl its referenced are traced
 
 def str_to_class(classname: str):
     """translate for example the string `TranslationUnitDecl` into that class"""
@@ -80,6 +88,7 @@ class Node:
         self.id = id
         self.kind = kind
         self.__dict__.update((k, v) for k, v in kwargs.items() if k not in ["inner"])
+        self.parent = None
         self.__parse_inner(**kwargs)
 
     def __parse_inner(self, **kwargs):
@@ -95,24 +104,30 @@ class Node:
 
                 C = str_to_class(inn["kind"])
                 n = C(**inn)
+                n.parent = self
                 self.inner.append(n)
         else:
             self.inner = None
 
-    def reparse(self, out, t, recursive=True):
+    def reparse(self, out, t, recursive=True, check=None):
         """ reparse the current `inner` nodes for type `t` and appends them
         to out"""
         if self.inner is not None:
             for tmp in self.inner:
                 if type(tmp) is t:
-                    out.append(tmp)
-
+                    if check is None:
+                        out.append(tmp)
+                    else:
+                        if check(out, tmp):
+                            out.append(tmp)
                 if recursive:
-                    tmp.reparse(out, t, recursive)
+                    tmp.reparse(out, t, recursive=recursive, check=check)
+
+        return out
 
     def reparse_single(self, out, t):
-        """ reparse the current `inner` nodes for a single type `t`. And
-        on first occurence will set out on in, quits afterward"""
+        """ reparse the current `inner` nodes for a single type `t`. The
+        on first occurrence will set `out` to it, quits afterward"""
         out = None
 
         # empty compound stmt = empty func
@@ -156,6 +171,12 @@ class Node:
 
     def is_empty(self):
         return len(self.inner) == 0
+    
+    def width(self):
+        t = self.get_type()
+        if t is None:
+            return None
+        return type2width(t)
 
     def __str__(self, depth=0):
         ret = str(self.id) + " " + str(self.__class__) + "\n"
@@ -165,6 +186,9 @@ class Node:
             for a in self.inner:
                 ret += t + a.__str__(depth)
         return ret
+
+    def print(self):
+        print(self.__dict__)
 
 
 class TranslationUnitDecl(Node):
@@ -333,7 +357,14 @@ class CompoundStmt(Node):
 
 
 class DeclStmt(Node):
-    pass
+    def __init__(self, id: str, kind: str, *args, **kwargs):
+        """
+        """
+        super().__init__(id, kind, *args, **kwargs)
+        self.refs = []
+
+    def get_references(self):
+        return self.refs
 
 
 class VarDecl(Node):
@@ -377,6 +408,67 @@ class VarDecl(Node):
         raise NotImplementedError
 
 
+class ParmVarDecl(Node):
+    def __init__(self, id: str, kind: str, *args, **kwargs):
+        """
+        """
+        super().__init__(id, kind, *args, **kwargs)
+
+    def get_width(self):
+        """
+        returns the width if the variable in bytes
+        """
+        t = self.get_type()
+        assert t
+        return type2width(t)
+
+    def is_integral(self):
+        """
+        returns if a variable is integral: int, long int, ....
+        """
+        try:
+            type2width(self.get_type())
+            return True
+        except:
+            return False
+
+    def get_init_value(self):
+        """
+        this only makes sense for c++.
+        """
+        return None
+
+    def is_const(self):
+        """
+        returns true if variable is const
+        """
+        raise NotImplementedError
+
+    def usages(self):
+        """
+        This is rather cool: returns the list of usages of this variable.
+        This is just the list of Nodes where this is in the `inner` field
+        as a `DeclRef`
+        """
+        raise NotImplementedError
+
+
+class TypedefDecl(Node):
+    pass
+
+
+class RecordType(Node):
+    pass
+
+
+class PointerType(Node):
+    pass
+
+
+class ConstantArrayType(Node):
+    pass
+
+
 class ReturnStmt(Node):
     pass
 
@@ -390,8 +482,20 @@ class ImplicitCastExpr(Node):
 
 
 class DeclRefExpr(Node):
-    pass
+    def __init__(self, id: str, kind: str, *args, **kwargs):
+        """
+        exports this additional fields:
+        - referenced_decl
+        """
+        super().__init__(id, kind, *args, **kwargs)
+        # print(kwargs)
 
+    def value_category(self):
+        """ something like `lvalue` """
+        return self.valueCategory
+
+    def get_reference_id(self):
+        return self.__dict__["referencedDecl"]["id"]
 
 class BinaryOperator(Node):
     pass
@@ -434,13 +538,14 @@ class ForStmt(Node):
         self.__step_size = None
         self.__body = None
 
-        self.reparse_single(self.__body, CompoundStmt)
+        self.__body = self.reparse_single(self.__body, CompoundStmt)
         if self.__body is not None:
-            self.__body.reparse(self.__var_decls, VarDecl)
-            self.__body.reparse(self.__func_calls, CallExpr)
-            self.__body.reparse(self.__break_stmts, BreakStmt, recursive=False)
+            self.__var_decl = self.__body.reparse(self.__var_decls, DeclStmt)
+            self.__func_calls = self.__body.reparse(self.__func_calls, CallExpr)
+            self.__break_stmts = self.__body.reparse(self.__break_stmts, BreakStmt, recursive=False)
 
         # TODO currently we only support the trivial for loop
+        # TODO account for loops with mutliple counter variables
         if len(self.inner) == 4:
             self.__is_basic_loop = True
             self.__lower_limit = self.inner[0]
@@ -479,6 +584,9 @@ class ForStmt(Node):
     def get_body(self):
         return self.__body
 
+    def get_variables(self):
+        return self.__var_decls
+    
     def print(self):
         print(self.__dict__)
 
@@ -500,13 +608,16 @@ class WhileStmt(Node):
         self.__break_stmts = []
         self.__body = None
 
-        self.reparse_single(self.__body, CompoundStmt)
+        self.__body = self.reparse_single(self.__body, CompoundStmt)
         if self.__body is not None:
-            self.__body.reparse(self.__var_decls, VarDecl)
-            self.__body.reparse(self.__func_calls, CallExpr)
-            self.__body.reparse(self.__break_stmts, BreakStmt, recursive=False)
+            self.__var_decl = self.__body.reparse(self.__var_decls, DeclStmt)
+            self.__func_calls = self.__body.reparse(self.__func_calls, CallExpr)
+            self.__break_stmts = self.__body.reparse(self.__break_stmts, BreakStmt, recursive=False)
 
         while_loop_decls.append(self)
+
+    def get_variables(self):
+        return self.__var_decls
 
     def print(self):
         print(self.__dict__)
@@ -531,11 +642,14 @@ class DoStmt(Node):
 
         self.reparse_single(self.__body, CompoundStmt)
         if self.__body is not None:
-            self.__body.reparse(self.__var_decls, VarDecl)
-            self.__body.reparse(self.__func_calls, CallExpr)
-            self.__body.reparse(self.__break_stmts, BreakStmt, recursive=False)
+            self.__var_decl = self.__body.reparse(self.__var_decls, DeclStmt)
+            self.__func_calls = self.__body.reparse(self.__func_calls, CallExpr)
+            self.__break_stmts = self.__body.reparse(self.__break_stmts, BreakStmt, recursive=False)
 
         while_loop_decls.append(self)
+
+    def get_variables(self):
+        return self.__var_decls
 
     def print(self):
         print(self.__dict__)
