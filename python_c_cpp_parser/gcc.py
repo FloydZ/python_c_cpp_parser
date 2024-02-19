@@ -141,5 +141,5 @@ class gcc_parser:
 
         return nodes
 
-c = gcc_parser("../test/test2.c")
+c = gcc_parser("../test/c/test2.c")
 print(c.execute())

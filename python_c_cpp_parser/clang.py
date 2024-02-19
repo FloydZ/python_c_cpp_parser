@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import copy
 from subprocess import Popen, PIPE, STDOUT
 from typing import Union
 from pathlib import Path
@@ -105,7 +105,7 @@ class Node:
         if self.inner is not None:
             for tmp in self.inner:
                 if type(tmp) is t:
-                    out.append(t)
+                    out.append(tmp)
 
                 if recursive:
                     tmp.reparse(out, t, recursive)
@@ -153,6 +153,9 @@ class Node:
         if "type" in self.__dict__.keys():
             return self.type["qualType"]
         return None
+
+    def is_empty(self):
+        return len(self.inner) == 0
 
     def __str__(self, depth=0):
         ret = str(self.id) + " " + str(self.__class__) + "\n"
@@ -202,7 +205,7 @@ class ParmVarDecl(Node):
 
     def get_init_value(self):
         """
-        this only makes sence for c++.
+        this only makes sense for c++.
         """
         return None
 
@@ -238,6 +241,7 @@ class FunctionDecl(Node):
         """
         super().__init__(id, kind, *args, **kwargs)
         self.__arguments = []
+        self.__return_type = []
         self.__body = None
 
         # find the function arguments
@@ -251,6 +255,8 @@ class FunctionDecl(Node):
                 if type(i) is CompoundStmt:
                     self.__body = i
 
+        # kind of strange
+        self.__return_type = kwargs["type"]["qualType"]
         # NOTE: we cannot assert this, because there are empty function
         # assert self.__body
         functions_decls.append(self)
@@ -259,7 +265,10 @@ class FunctionDecl(Node):
         return self.__arguments
 
     def get_body(self):
-        return self.__arguments
+        return self.__body
+
+    def get_return_type(self):
+        return self.__return_type
 
 
 class CompoundStmt(Node):
@@ -273,7 +282,6 @@ class CompoundStmt(Node):
         - calls
         """
         super().__init__(id, kind, *args, **kwargs)
-        print(kwargs)
         self.__var_decls = []
         self.__for_loops = []
         self.__while_loops = []
@@ -288,16 +296,36 @@ class CompoundStmt(Node):
         self.reparse(self.__calls, CallExpr)
         compound_decls.append(self)
 
-    def get_variables(self):
+    def get_var_decls(self, i: int = None):
+        if i is not None:
+            if i > len(self.__var_decls):
+                print("OOB")
+                return None
+            return self.__var_decls[i]
         return self.__var_decls
 
-    def get_for_loops(self):
+    def get_for_loops(self, i: int = None):
+        if i is not None:
+            if i > len(self.__for_loops):
+                print("OOB")
+                return None
+            return self.__for_loops[i]
         return self.__for_loops
 
-    def get_do_loops(self):
+    def get_do_loops(self, i: int = None):
+        if i is not None:
+            if i > len(self.__do_loops):
+                print("OOB")
+                return None
+            return self.__do_loops[i]
         return self.__do_loops
 
-    def get_while_loops(self):
+    def get_while_loops(self, i: int = None):
+        if i is not None:
+            if i > len(self.__while_loops):
+                print("OOB")
+                return None
+            return self.__while_loops[i]
         return self.__while_loops
 
     def print(self):
@@ -387,6 +415,9 @@ class ForStmt(Node):
         exports this additional fields:
         - var_decls
         - func_calls
+        - break_stmt
+
+        additional information tracked
         - lower_limit
         - upper_limit
         - step_size
@@ -396,6 +427,8 @@ class ForStmt(Node):
         self.__var_decls = []
         self.__func_calls = []
         self.__break_stmts = []
+
+        self.__is_basic_loop = False
         self.__lower_limit = None
         self.__upper_limit = None
         self.__step_size = None
@@ -409,11 +442,42 @@ class ForStmt(Node):
 
         # TODO currently we only support the trivial for loop
         if len(self.inner) == 4:
+            self.__is_basic_loop = True
             self.__lower_limit = self.inner[0]
             self.__upper_limit = self.inner[1]
-            self.__step_limit = self.inner[2]
+            self.__step_size = self.inner[2]
 
+        # append the decl to the global declaration
         for_loop_decls.append(self)
+
+    def is_basic_loop(self):
+        """
+        returns true if the loop is of the simplest form:
+            for(int i = 0; i < 32; i++){ ... }
+
+        """
+        return self.__is_basic_loop
+
+    def get_var_decls(self):
+        return self.__var_decls
+
+    def get_func_calls(self):
+        return self.__func_calls
+
+    def get_break_stmts(self):
+        return self.__break_stmts
+
+    def get_lower_limit(self):
+        return self.__lower_limit
+
+    def get_upper_limit(self):
+        return self.__lower_limit
+
+    def get_step_size(self):
+        return self.__step_size
+
+    def get_body(self):
+        return self.__body
 
     def print(self):
         print(self.__dict__)
@@ -605,18 +669,42 @@ class clang_parser:
 
     def __init__(self, file: Union[str, Path], functions: list[str] = []):
         """
-        :param functions: if fiven only parse the given functions into an AST
+        :param functions: if given only parse the given functions into an AST
         """
         self.__file = file if type(file) is str else file.absolute()
         self.__outfile = tempfile.NamedTemporaryFile(suffix=".json")
-        self.__functions = functions
+        self.__functions = functions # TODO not implemented
+
+        # reset global variables
+        global functions_decls, compound_decls, for_loop_decls, while_loop_decls, do_loop_decls
+        functions_decls = []
+        compound_decls = []
+        for_loop_decls = []
+        while_loop_decls = []
+        do_loop_decls = []
+
+        self.__function_decls = []
+        self.__compound_decls = []
+        self.__for_loop_decls = []
+        self.__while_loop_decls = []
+        self.__do_loop_decls = []
+
         if not os.path.isfile(self.__file):
             logging.error("file does not exists")
             return
 
+    def get_function_decls(self, i: int = None):
+        if i is not None:
+            if i > len(self.__function_decls):
+                print("OOB")
+                return None
+
+            return self.__function_decls[i]
+        return self.__function_decls
+
     def __available__(self):
         """
-        :return true if `clang` is available else false
+        :return: true if `clang` is available else false
         """
         cmd = [clang_parser.BINARY] + ["--version"]
         p = Popen(cmd, stdin=PIPE, stdout=self.__outfile, stderr=STDOUT)
@@ -625,7 +713,7 @@ class clang_parser:
 
         if p.returncode != 0 and p.returncode is not None:
             logging.error("couldn't execute: %s %s", " ".join(cmd), p.stdout.read())
-            return None
+            return False, ""
 
         data = p.stdout.readlines()
         data = [str(a).replace("b'", "")
@@ -636,7 +724,7 @@ class clang_parser:
         data = data[0]
         ver = re.findall(r'\d.\d.\n', data)
         assert len(ver) == 1
-        return ver[0]
+        return True, ver[0]
 
     def execute(self):
         cmd = [clang_parser.BINARY] + clang_parser.COMMAND
@@ -657,6 +745,14 @@ class clang_parser:
         data = self.__outfile.read()
         data = json.loads(data)
         data = Node(**data)
+
+        # copy global variables into locaL variables
+        global functions_decls, compound_decls, for_loop_decls, while_loop_decls, do_loop_decls
+        self.__function_decls = copy.copy(functions_decls)
+        self.__compound_decls = copy.copy(compound_decls)
+        self.__for_loop_decls = copy.copy(for_loop_decls)
+        self.__while_loop_decls = copy.copy(while_loop_decls)
+        self.__do_loop_decls = copy.copy(do_loop_decls)
         return data
 
     def insert(self, line: str, pos: int):
@@ -670,44 +766,3 @@ class clang_parser:
         replaces the code-line `pos` with `line`
         """
         NotImplementedError  # TODO
-
-
-# TODO
-# for each function / for loop/ while loop/ do loop /compount statment / call / if else/
-#  track the number of each of those + VarDecl
-
-c = clang_parser("../test/test2.c")
-d = c.execute()
-print(d)
-
-#print("\n".join([str(a.__dict__) for a in functions_decls]))
-#print("\n".join([str(a.get_arguments()) for a in functions_decls]))
-#print("\n".join([str(a.get_location()) for a in functions_decls]))
-#print("\n".join([str(a.get_file()) for a in functions_decls]))
-#
-#d = functions_decls[0]
-#
-#print()
-#print("function arguments:")
-#print(",".join(str(a.get_type()) for a in d.get_arguments()))
-#print(",".join(str(a.get_width()) for a in d.get_arguments()))
-
-#for d in compound_decls:
-#    print()
-#    print("compound statements")
-#    print(d.get_variables())
-#    print(",".join(str(a) for a in d.get_variables()))
-#    print(",".join(str(a.get_init_value()) for a in d.get_variables()))
-#    d.print()
-
-print("for statements")
-for d in for_loop_decls:
-    d.print()
-
-print("whole statements")
-for d in while_loop_decls:
-    d.print()
-
-print("oo statements")
-for d in do_loop_decls:
-    d.print()
