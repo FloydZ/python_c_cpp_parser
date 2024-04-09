@@ -2,5 +2,4 @@ pathlib
 argparse
 pytest
 pycparser
-pytest
 pylint
