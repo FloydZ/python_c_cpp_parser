@@ -19,6 +19,30 @@ def is_empty_str(s: str):
     return False
 
 
+def parse_gcc_node_to_clang_node(nodes: dict):
+    """
+    parses the output of `gcc_parser().execute()`
+    into a general node framework
+    :nodes: dict of the following form: {
+        '1': {'id': '1', 'kind': 'bind_expr', 'type:': '@2', 'vars:': '@3', 'body:': '@4'}
+        '2': {'id': '2', 'kind': 'void_type', 'name:': '@5', 'algn:': '8'}
+        ...
+    }
+    
+    """
+    translation = {
+        "function_type": FunctionDecl
+    }
+    ret = {}
+    for k, v in nodes.items():
+        assert v.kind
+        if v.kind in translation:
+            f = translation[v.kind]
+            f(**v.__dict__)
+
+    return ret
+
+
 def split_line(line: str):
     splits = line.split(" ")
     # first remove all the spaces
@@ -83,8 +107,6 @@ class gcc_parser:
     def execute(self):
         cmd = gcc_parser.BINARY + gcc_parser.COMMANDS + [gcc_parser.COMMAND+str(self.__outfile.name)]
         cmd += [self.__file]
-        print(cmd)
-
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
         p.wait()
 
@@ -113,7 +135,7 @@ class gcc_parser:
                                  size: @10      algn: 32       used: 1   
         ...
 
-        :return a dictonary which keys are the node ids and values the nodes are.
+        :return: a dictionary which keys are the node ids and values the nodes are.
         """
         # first find the entry
         i = 0
@@ -130,7 +152,7 @@ class gcc_parser:
             if lines[i].startswith("@"):
                 if cNode is not None:
                     assert cNode.id
-                    nodes[cNode.id] = (cNode)
+                    nodes[cNode.id] = cNode
                 
                 cNode = ParsingNode.from_line(lines[i])
                 i = i + 1
@@ -150,7 +172,10 @@ class gcc_parser:
         return nodes
 
 
-c = gcc_parser("../test/c/test2.c")
+c = gcc_parser("../test/c/var_decl/simple.c")
 nodes = c.execute()
-for n in nodes.values():
+#for n in nodes.values():
+#    print(n)
+nodes2 = parse_gcc_node_to_clang_node(nodes)
+for n in nodes2.values():
     print(n)

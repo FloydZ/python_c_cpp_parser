@@ -280,7 +280,10 @@ class FunctionDecl(Node):
                     self.__body = i
 
         # kind of strange
-        self.__return_type = kwargs["type"]["qualType"]
+        try:
+            self.__return_type = kwargs["type"]["qualType"]
+        except:
+            self.__return_type = ""
         # NOTE: we cannot assert this, because there are empty function
         # assert self.__body
         functions_decls.append(self)
